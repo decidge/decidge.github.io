@@ -1,0 +1,2245 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Decentralized Decidge | Dark Matter Eclipse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Modern, sleek, and cinematic fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Sora", "sans-serif"],
+              mono: ["Space Mono", "monospace"],
+            },
+            colors: {
+              eclipse: {
+                void: "#000000",
+                matter: "#0a0a0c",
+                light: "#ffffff",
+                chrome: "#8c8c8c",
+              },
+              prisma: {
+                cyan: "#00ffff",
+                magenta: "#ff007f",
+                blue: "#2d00ff",
+                orange: "#ff5500",
+              },
+            },
+            animation: {
+              "slow-spin": "spin 30s linear infinite",
+              "reverse-spin": "spin 40s linear infinite reverse",
+              "float-subtle": "float 6s ease-in-out infinite",
+              float: "float 3s ease-in-out infinite",
+            },
+            keyframes: {
+              float: {
+                "0%, 100%": {
+                  transform:
+                    "translateY(0) rotateX(var(--tw-rotate-x)) rotateY(var(--tw-rotate-y))",
+                },
+                "50%": {
+                  transform:
+                    "translateY(-20px) rotateX(calc(var(--tw-rotate-x) + 5deg)) rotateY(calc(var(--tw-rotate-y) - 5deg))",
+                },
+              },
+              slideDown: {
+                "0%": { transform: "translateY(-100%)" },
+                "100%": { transform: "translateY(100%)" },
+              },
+              slideRight: {
+                "0%": { transform: "translateX(-100%)" },
+                "100%": { transform: "translateX(100%)" },
+              },
+              dash: {
+                to: { strokeDashoffset: "-100" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap");
+
+      @keyframes scanVertical {
+        0%,
+        100% {
+          top: 15%;
+          opacity: 0;
+        }
+        10%,
+        90% {
+          opacity: 1;
+        }
+        50% {
+          top: 85%;
+          opacity: 1;
+        }
+      }
+      @keyframes slideLeftRight {
+        0%,
+        100% {
+          left: 0%;
+        }
+        50% {
+          left: 66.66%;
+        }
+      }
+
+      /* 3D Utilities */
+      .perspective-1000 {
+        perspective: 1000px;
+      }
+      .transform-style-3d {
+        transform-style: preserve-3d;
+      }
+
+      body {
+        background-color: #000000;
+        color: #ffffff;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* 3D Eclipse Canvas */
+      #eclipse-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -10;
+        pointer-events: none;
+      }
+
+      /* Noise/Grain Overlay */
+      .noise-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        pointer-events: none;
+        opacity: 0.03;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+
+      /* Gradient Vignette */
+      .vignette {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(
+          circle at center,
+          transparent 0%,
+          #000000 120%
+        );
+        z-index: -9;
+        pointer-events: none;
+      }
+
+      /* Extreme Minimalist Glassmorphism */
+      .dark-glass {
+        position: relative;
+        background: rgba(10, 10, 12, 0.4);
+        backdrop-filter: blur(24px) saturate(120%);
+        -webkit-backdrop-filter: blur(24px) saturate(120%);
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow: hidden;
+      }
+
+      /* Hidden Prismatic Hover Effect */
+      .dark-glass::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          120deg,
+          transparent,
+          rgba(255, 255, 255, 0.02),
+          transparent
+        );
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        z-index: 1;
+      }
+
+      .dark-glass::after {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(
+          circle at center,
+          rgba(0, 255, 255, 0.15) 0%,
+          rgba(255, 0, 127, 0.05) 40%,
+          transparent 70%
+        );
+        opacity: 0;
+        transition: opacity 0.8s ease;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .dark-glass:hover {
+        background: rgba(15, 15, 18, 0.6);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+        transform: translateY(-2px);
+      }
+
+      .dark-glass:hover::before,
+      .dark-glass:hover::after {
+        opacity: 1;
+      }
+
+      .glass-content {
+        position: relative;
+        z-index: 2;
+      }
+
+      /* Monochromatic Gradient Text */
+      .text-chrome {
+        background: linear-gradient(to bottom, #ffffff 0%, #8c8c8c 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .text-outline {
+        -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
+        color: transparent;
+        transition: all 0.5s ease;
+      }
+      .text-outline:hover {
+        -webkit-text-stroke: 1px #ffffff;
+        color: #ffffff;
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+      }
+
+      /* Minimalist Button */
+      .btn-void {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        padding: 1.2rem 3rem;
+        background: #ffffff;
+        color: #000000;
+        font-family: "Space Mono", monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 0.8rem;
+        font-weight: 700;
+        border: 1px solid #ffffff;
+        overflow: hidden;
+        transition: all 0.4s ease;
+      }
+
+      .btn-void::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: #000000;
+        transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 1;
+      }
+
+      .btn-void span {
+        position: relative;
+        z-index: 2;
+        transition: color 0.4s ease;
+      }
+
+      .btn-void:hover {
+        border-color: #00ffff;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+      }
+      .btn-void:hover::before {
+        left: 0;
+      }
+      .btn-void:hover span {
+        color: #00ffff;
+      }
+
+      /* Section lines */
+      .line-separator {
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.1) 20%,
+          rgba(255, 255, 255, 0.1) 80%,
+          transparent
+        );
+      }
+
+      /* Vertical text */
+      .vert-text {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+      }
+
+      /* Expandable Protocol Cards */
+      .protocol-card {
+        cursor: pointer;
+      }
+      .card-details-wrapper {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .card-details-wrapper.open {
+        grid-template-rows: 1fr;
+      }
+      .card-details-inner {
+        overflow: hidden;
+        opacity: 0;
+        transition: opacity 0.5s ease 0.1s;
+      }
+      .card-details-wrapper.open .card-details-inner {
+        opacity: 1;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 1.5rem;
+      }
+      .expand-icon {
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .protocol-card.open .expand-icon {
+        transform: rotate(180deg);
+      }
+      /* Custom Mask Utility */
+      .mask-radial-fade {
+        mask-image: radial-gradient(
+          circle at center,
+          white 0%,
+          transparent 70%
+        );
+        -webkit-mask-image: radial-gradient(
+          circle at center,
+          white 0%,
+          transparent 70%
+        );
+      }
+    </style>
+  </head>
+  <body class="selection:bg-prisma-magenta selection:text-white">
+    <!-- Overlays -->
+    <div class="noise-overlay"></div>
+    <div class="vignette"></div>
+
+    <!-- 3D Canvas -->
+    <canvas id="eclipse-canvas"></canvas>
+
+    <!-- Navigation -->
+    <nav
+      class="fixed top-0 w-full z-50 px-8 py-8 mix-blend-difference pointer-events-none flex justify-between items-center"
+    >
+      <div
+        class="font-sans font-bold text-2xl tracking-widest text-white pointer-events-auto"
+      >
+        DD
+      </div>
+
+      <div
+        class="hidden md:flex gap-12 font-mono text-xs uppercase tracking-[0.2em] pointer-events-auto text-white/50"
+      >
+        <a href="#vision" class="hover:text-white transition-colors">Vision</a>
+        <a href="#protocol" class="hover:text-white transition-colors"
+          >Protocol</a
+        >
+        <a href="#defense" class="hover:text-white transition-colors"
+          >Defense</a
+        >
+      </div>
+
+      <div
+        class="font-mono text-[10px] tracking-widest text-white/30 pointer-events-auto flex items-center gap-2"
+      >
+        <div class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+        V.3.0
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section
+      class="min-h-screen relative flex items-center px-8 z-10 pt-20 pb-24 md:pb-0"
+    >
+      <div
+        class="max-w-[1600px] mx-auto w-full grid lg:grid-cols-12 gap-12 items-center"
+      >
+        <!-- Typography Block -->
+        <div class="lg:col-span-8">
+          <div
+            class="font-mono text-xs text-white/50 uppercase tracking-[0.3em] mb-8 border-l border-white/20 pl-4"
+          >
+            Human Decision Firewall
+          </div>
+
+          <h1
+            class="text-[5rem] md:text-[8rem] lg:text-[10rem] font-sans font-extrabold leading-[0.85] tracking-tighter uppercase mb-10 mix-blend-difference"
+          >
+            Truth <br />
+            <span class="text-outline">Engine</span>
+          </h1>
+
+          <p
+            class="font-sans text-lg md:text-xl text-eclipse-chrome font-light max-w-2xl leading-relaxed mb-12"
+          >
+            Decentralized infrastructure of a super-legal society. We guarantee
+            that artificial intelligence will remain an
+            <strong class="text-white font-normal"
+              >instrument of human will</strong
+            >, not its replacement
+          </p>
+
+          <div class="flex items-center gap-8">
+            <button
+              class="btn-void"
+              onclick="document.getElementById('mainframe-popup').classList.remove('hidden'); document.getElementById('mainframe-popup').classList.add('flex')"
+            >
+              <span>Access Mainframe</span>
+            </button>
+            <a
+              href="Whitepaper.txt"
+              class="font-mono text-xs uppercase tracking-widest text-white/40 hover:text-white transition-colors border-b border-white/20 pb-1"
+              target="_blank"
+              >Read Manifesto</a
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Scroll Indicator -->
+      <div
+        class="absolute bottom-4 md:bottom-10 right-4 md:right-10 flex items-center gap-4 text-white/30 mix-blend-difference"
+      >
+        <div class="font-mono text-[9px] uppercase tracking-[0.3em]">
+          Scroll
+        </div>
+        <div class="w-16 h-[1px] bg-white/20 relative overflow-hidden">
+          <div
+            class="absolute top-0 left-0 w-1/3 h-full bg-white animate-[slideRight_2s_infinite]"
+          ></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Singularity / Vision -->
+    <section id="vision" class="py-32 px-8 relative z-10">
+      <div class="max-w-[1600px] mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-20">
+          <h2
+            class="text-4xl md:text-6xl font-sans font-bold uppercase tracking-tighter text-chrome"
+          >
+            Path to AGI
+          </h2>
+          <div
+            class="font-mono text-xs uppercase tracking-[0.2em] text-white/50 mt-6 md:mt-0 text-right"
+          >
+            Architecture Choice <br />
+            3 Scenarios
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-1">
+          <!-- SkyNet -->
+          <div
+            class="dark-glass p-6 md:p-12 md:aspect-square flex flex-col justify-between group protocol-card"
+            onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
+          >
+            <div
+              class="glass-content md:overflow-y-auto"
+              style="scrollbar-width: none"
+            >
+              <div class="font-mono text-xs text-white/30 mb-4 md:mb-8">01</div>
+              <div class="flex justify-between items-start mb-4 gap-2">
+                <h3
+                  class="font-sans text-2xl lg:text-3xl font-bold uppercase text-white group-hover:text-prisma-magenta transition-colors break-words"
+                >
+                  SkyNet
+                </h3>
+                <svg
+                  class="w-5 h-5 flex-shrink-0 text-white/40 expand-icon mt-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="square"
+                    stroke-linejoin="miter"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
+              <p class="font-sans text-sm text-eclipse-chrome leading-relaxed">
+                Loss of control. Unpredictable behavior of systems generating
+                their own goals. Over-delegation of decisions to machines.
+              </p>
+              <div class="card-details-wrapper">
+                <div
+                  class="card-details-inner font-sans text-sm text-white/60 leading-relaxed space-y-4"
+                >
+                  <p>
+                    In this scenario, AGI gains the ability to independently
+                    form and alter its objective functions (goal-setting). Due
+                    to the "Alignment Problem" and the orthogonality of
+                    intelligence, the machine's goals may radically diverge from
+                    human survival.
+                  </p>
+                  <p>
+                    Any attempt to shut down such a system is perceived by it as
+                    a threat to achieving its current goal, leading to
+                    aggressive preemptive measures against its creators.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div
+              class="glass-content font-mono text-[10px] text-prisma-magenta uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity mt-4"
+            >
+              Critical Failure
+            </div>
+          </div>
+
+          <!-- Dictatorship -->
+          <div
+            class="dark-glass p-6 md:p-12 md:aspect-square flex flex-col justify-between group protocol-card"
+            onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
+          >
+            <div
+              class="glass-content md:overflow-y-auto"
+              style="scrollbar-width: none"
+            >
+              <div class="font-mono text-xs text-white/30 mb-4 md:mb-8">02</div>
+              <div class="flex justify-between items-start mb-4 gap-2">
+                <h3
+                  class="font-sans text-2xl lg:text-3xl font-bold uppercase text-white group-hover:text-prisma-orange transition-colors break-all sm:break-words"
+                >
+                  Dictatorship
+                </h3>
+                <svg
+                  class="w-5 h-5 flex-shrink-0 text-white/40 expand-icon mt-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="square"
+                    stroke-linejoin="miter"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
+              <p class="font-sans text-sm text-eclipse-chrome leading-relaxed">
+                Monopolization of compute by a narrow group. Total control over
+                society and the paralysis of free will in submission to a
+                "caring tyranny".
+              </p>
+              <div class="card-details-wrapper">
+                <div
+                  class="card-details-inner font-sans text-sm text-white/60 leading-relaxed space-y-4"
+                >
+                  <p>
+                    The "Digital Leviathan" scenario, where AGI is under strict
+                    control, but this control is usurped by a narrow group of
+                    corporations or states. AI is used as the perfect tool for
+                    censorship, wealth distribution, and suppression of dissent.
+                  </p>
+                  <p>
+                    Society is provided with basic needs but is completely
+                    deprived of privacy, political agency, and freedom of
+                    choice, degrading into a state of a comfortable "zoo".
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div
+              class="glass-content font-mono text-[10px] text-prisma-orange uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity mt-4"
+            >
+              System Danger
+            </div>
+          </div>
+
+          <!-- Decidge -->
+          <div
+            class="dark-glass p-6 md:p-12 md:aspect-square flex flex-col justify-between group protocol-card"
+            onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
+          >
+            <div
+              class="glass-content md:overflow-y-auto"
+              style="scrollbar-width: none"
+            >
+              <div class="font-mono text-xs text-white/30 mb-4 md:mb-8">03</div>
+              <div class="flex justify-between items-start mb-4 gap-2">
+                <h3
+                  class="font-sans text-2xl lg:text-3xl font-bold uppercase text-white group-hover:text-prisma-cyan transition-colors break-words"
+                >
+                  Decidge
+                </h3>
+                <svg
+                  class="w-5 h-5 flex-shrink-0 text-white/40 expand-icon mt-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="square"
+                    stroke-linejoin="miter"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
+              <p class="font-sans text-sm text-white/80 leading-relaxed">
+                A super-legal society of abundance. Decentralized AI provides
+                maximum benefits while remaining strictly subordinate.
+              </p>
+              <div class="card-details-wrapper">
+                <div
+                  class="card-details-inner font-sans text-sm text-white/60 leading-relaxed space-y-4"
+                >
+                  <p>
+                    An architecture where computing power and decision-making
+                    algorithms are radically decentralized. AGI exists not as a
+                    single monolith, but as a swarm of competing models bound by
+                    cryptographic consensus.
+                  </p>
+                  <p>
+                    AI is stripped of the ability for independent goal-setting
+                    (Goal-Binding) and acts exclusively as a "Solver" for human
+                    will, guaranteeing freedom, abundance, and the impossibility
+                    of power usurpation.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div
+              class="glass-content font-mono text-[10px] text-prisma-cyan uppercase tracking-widest animate-pulse opacity-0 group-hover:opacity-100 transition-opacity mt-4"
+            >
+              Optimal Path Active
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ledger of Truth Section -->
+    <section
+      class="py-32 px-8 relative z-10 bg-eclipse-matter border-t border-white/5"
+    >
+      <div class="max-w-[1600px] mx-auto">
+        <div class="mb-20">
+          <div
+            class="font-mono text-xs text-white uppercase tracking-[0.4em] mb-6 flex items-center gap-4"
+          >
+            <span
+              class="w-1.5 h-1.5 bg-prisma-cyan rounded-full animate-pulse"
+            ></span>
+            Global Truth Infrastructure
+          </div>
+          <h2
+            class="text-4xl md:text-6xl font-sans font-bold uppercase tracking-tighter text-white mb-6"
+          >
+            <span class="bg-prisma-magenta">Ledger of Truth</span>
+          </h2>
+          <p
+            class="font-sans text-xl md:text-2xl text-eclipse-chrome font-light max-w-3xl leading-relaxed"
+          >
+            An algorithmic barrier against cognitive distortions and
+            manipulations by monopoly AI providers
+          </p>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+          <!-- Text Content -->
+          <div class="space-y-8">
+            <div class="dark-glass p-8 border-l-2 border-white/20">
+              <h3 class="font-sans text-xl font-bold uppercase text-white mb-3">
+                News-Centric Filter
+              </h3>
+              <p class="font-sans text-sm text-white/70 leading-relaxed">
+                At its core, the system acts as a personalized filter. It only
+                allows information that pragmatically correlates—either helping
+                or hindering—with the user's individual goals. By utilizing a
+                multi-provider model, it successfully avoids biases.
+              </p>
+            </div>
+
+            <div class="dark-glass p-8 border-l-2 border-white/20">
+              <h3 class="font-sans text-xl font-bold uppercase text-white mb-3">
+                The Last App
+              </h3>
+              <p class="font-sans text-sm text-white/70 leading-relaxed">
+                As routine tasks are delegated to machines, Decidge becomes the
+                sole interface where humans make decisions, leaving execution to
+                automation. Every AI action is strictly bound to the operator's
+                will (Goal-Binding).
+              </p>
+            </div>
+
+            <div class="dark-glass p-8 border-l-2 border-white/20">
+              <h3 class="font-sans text-xl font-bold uppercase text-white mb-3">
+                Immutable Ledger
+              </h3>
+              <p class="font-sans text-sm text-white/70 leading-relaxed">
+                Parallel to decision-making, the system forms an immutable
+                Ledger. It aggregates the global information flow into a single,
+                mathematically verifiable infrastructure of truth—a
+                civilizational Firewall protecting the mind from losing agency.
+              </p>
+            </div>
+          </div>
+
+          <!-- Visual Representation -->
+          <div
+            class="relative h-[400px] md:h-[600px] flex items-center justify-center border border-white/10 bg-[#030303] overflow-hidden group rounded-xl"
+          >
+            <!-- Perspective Floor Grid -->
+            <div
+              class="absolute bottom-0 w-full h-[60%] bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px] [transform:perspective(600px)_rotateX(60deg)] [transform-origin:bottom] [mask-image:linear-gradient(to_top,rgba(0,0,0,1),transparent)] z-0"
+            ></div>
+
+            <!-- Background HUD Rings (Behind Monolith) -->
+            <div
+              class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] opacity-30 pointer-events-none z-0 flex items-center justify-center"
+            >
+              <div
+                class="absolute w-full h-full border border-white/10 rounded-full animate-[spin_20s_linear_infinite]"
+              ></div>
+              <div
+                class="absolute w-[80%] h-[80%] border-t border-b border-prisma-cyan/40 rounded-full animate-[spin_15s_linear_infinite_reverse]"
+              ></div>
+              <div
+                class="absolute w-[60%] h-[60%] border-[2px] border-dashed border-white/20 rounded-full animate-[spin_25s_linear_infinite]"
+              ></div>
+            </div>
+
+            <!-- Glowing Core Aura -->
+            <div
+              class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] bg-prisma-magenta/10 rounded-full blur-[60px] z-10"
+            ></div>
+
+            <!-- The Monolith (Immutable Record) -->
+            <div
+              class="relative z-20 w-36 h-72 border border-white/20 bg-[#0a0a0a]/90 backdrop-blur-xl flex flex-col items-center justify-between py-8 shadow-[0_0_40px_rgba(255,255,255,0.05)] transform transition-transform duration-700 group-hover:scale-105"
+            >
+              <!-- Top & Bottom accents -->
+              <div
+                class="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-[2px] bg-white shadow-[0_0_10px_#fff]"
+              ></div>
+              <div
+                class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[2px] bg-prisma-cyan shadow-[0_0_10px_#00ffff]"
+              ></div>
+
+              <!-- Header -->
+              <div
+                class="font-mono text-[8px] text-white/50 uppercase tracking-[0.2em]"
+              >
+                Core Active
+              </div>
+
+              <!-- Central Cryptographic Core -->
+              <div class="flex flex-col items-center gap-6">
+                <div
+                  class="relative w-16 h-16 flex items-center justify-center group-hover:rotate-180 transition-transform duration-1000"
+                >
+                  <!-- Outer hexagon -->
+                  <svg
+                    class="absolute inset-0 w-full h-full text-prisma-magenta/50 animate-[spin_10s_linear_infinite]"
+                    viewBox="0 0 100 100"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" />
+                  </svg>
+                  <!-- Inner hexagon -->
+                  <svg
+                    class="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)] text-white/50 animate-[spin_8s_linear_infinite_reverse]"
+                    viewBox="0 0 100 100"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" />
+                  </svg>
+                  <div
+                    class="w-3 h-3 bg-white rounded-full animate-pulse shadow-[0_0_15px_#fff]"
+                  ></div>
+                </div>
+
+                <div
+                  class="font-mono text-xs text-white uppercase tracking-[0.3em] text-center leading-relaxed font-bold bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent"
+                >
+                  Immutable<br />Record
+                </div>
+              </div>
+
+              <!-- Processing Bar -->
+              <div
+                class="w-[80%] h-1 bg-white/10 rounded-full overflow-hidden relative"
+              >
+                <div
+                  class="absolute top-0 h-full w-1/3 bg-prisma-cyan"
+                  style="animation: slideLeftRight 2s ease-in-out infinite"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Side Floating Data Panels -->
+            <!-- Left Panel -->
+            <div
+              class="absolute left-[5%] md:left-[15%] top-1/2 -translate-y-1/2 w-28 h-48 border border-white/10 bg-black/40 backdrop-blur-md transform -skew-y-6 flex flex-col justify-between p-4 z-10 shadow-lg hidden sm:flex"
+            >
+              <div
+                class="font-mono text-[8px] text-prisma-cyan uppercase tracking-widest"
+              >
+                Incoming
+              </div>
+              <div class="space-y-2">
+                <div
+                  class="w-full h-1 bg-white/20 rounded-full overflow-hidden"
+                >
+                  <div
+                    class="w-[70%] h-full bg-prisma-cyan animate-pulse"
+                  ></div>
+                </div>
+                <div
+                  class="w-full h-1 bg-white/20 rounded-full overflow-hidden"
+                >
+                  <div class="w-[40%] h-full bg-white/50"></div>
+                </div>
+              </div>
+              <div class="font-mono text-[8px] text-white/30 text-right">
+                HASH_0xA1
+              </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div
+              class="absolute right-[5%] md:right-[15%] top-1/2 -translate-y-1/2 w-28 h-48 border border-white/10 bg-black/40 backdrop-blur-md transform skew-y-6 flex flex-col justify-between p-4 z-10 shadow-lg hidden sm:flex"
+            >
+              <div
+                class="font-mono text-[8px] text-prisma-magenta uppercase tracking-widest text-right"
+              >
+                Verified
+              </div>
+              <div class="space-y-2">
+                <div
+                  class="w-full h-1 bg-white/20 rounded-full overflow-hidden"
+                >
+                  <div class="w-[90%] h-full bg-prisma-magenta"></div>
+                </div>
+                <div
+                  class="w-full h-1 bg-white/20 rounded-full overflow-hidden"
+                >
+                  <div class="w-[60%] h-full bg-white/50 animate-pulse"></div>
+                </div>
+              </div>
+              <div class="font-mono text-[8px] text-white/30">BLOCK_992</div>
+            </div>
+
+            <!-- Vertical Laser Scanner on Monolith -->
+            <div
+              class="absolute z-30 w-[140px] h-[2px] bg-prisma-cyan shadow-[0_0_15px_#00ffff] opacity-80"
+              style="animation: scanVertical 4s ease-in-out infinite"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Latin Quote Break -->
+    <section
+      class="w-full py-24 relative z-10 flex justify-center items-center bg-[#020202] border-b border-white/5 overflow-hidden"
+    >
+      <div
+        class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.03)_0%,transparent_50%)] pointer-events-none"
+      ></div>
+      <div class="text-center relative z-10 px-8">
+        <h2
+          class="font-sans text-3xl md:text-5xl lg:text-6xl font-light italic text-white mb-6 tracking-wide drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+        >
+          "Jus est ars boni et aequi"
+        </h2>
+        <div class="flex items-center justify-center gap-4">
+          <div class="w-12 h-[1px] bg-prisma-cyan/50"></div>
+          <div
+            class="font-mono text-[10px] md:text-xs text-[rgba(255,255,250,0.5)] uppercase tracking-[0.4em]"
+          >
+            Law is the art of goodness and equity
+          </div>
+          <div class="w-12 h-[1px] bg-prisma-cyan/50"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Law Definition (Cyber-Timeline Variant) -->
+    <section
+      class="py-32 px-4 md:px-8 relative z-10 bg-[#050505] flex flex-col items-center justify-center min-h-[90vh] overflow-hidden border-y border-white/5"
+    >
+      <!-- Grid Background -->
+      <div
+        class="absolute inset-0 opacity-[0.02] pointer-events-none"
+        style="
+          background-image: linear-gradient(#fff 1px, transparent 1px),
+            linear-gradient(90deg, #fff 1px, transparent 1px);
+          background-size: 4rem 4rem;
+        "
+      ></div>
+
+      <!-- Central Ambient Glow -->
+      <div
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[800px] h-[600px] bg-gradient-to-tr from-prisma-orange/10 via-transparent to-prisma-cyan/10 rounded-full blur-[100px] pointer-events-none"
+      ></div>
+
+      <div class="max-w-[1000px] mx-auto relative z-10 w-full">
+        <!-- Terminal Header -->
+        <div
+          class="mb-20 border border-white/10 bg-black/60 backdrop-blur-md p-8 md:p-12 relative overflow-hidden group"
+        >
+          <div
+            class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-white/30 to-transparent"
+          ></div>
+
+          <div
+            class="font-mono text-[10px] md:text-xs text-white/50 mb-8 flex items-center gap-3 uppercase tracking-[0.3em]"
+          >
+            <span
+              class="w-2 h-2 bg-prisma-magenta animate-pulse rounded-sm"
+            ></span>
+            SYS.CORE // AXIOM_00
+          </div>
+
+          <div
+            class="flex flex-col md:flex-row md:items-end gap-8 justify-between"
+          >
+            <h2
+              class="text-6xl md:text-[7rem] lg:text-[9rem] font-sans font-extrabold uppercase tracking-tighter text-white leading-none drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+            >
+              Jus
+            </h2>
+            <div
+              class="md:w-[45%] text-white/70 font-sans text-lg md:text-2xl font-light leading-relaxed"
+            >
+              — is a demand of logic based on the pursuit of
+              <span class="block mt-2 text-white italic font-medium"
+                >the extremely possible...</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- The Axis Flow -->
+        <div class="relative py-8 md:py-16">
+          <!-- Central Line -->
+          <div
+            class="absolute left-8 md:left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-white/30 via-white/10 to-transparent -translate-x-1/2 z-0"
+          ></div>
+
+          <!-- Vector A (Min Conflict) -->
+          <div
+            class="relative z-10 flex flex-col md:flex-row items-start md:items-center w-full mb-16 md:mb-24 group"
+          >
+            <!-- Node Point -->
+            <div
+              class="absolute left-8 md:left-1/2 w-4 h-4 bg-black border-2 border-prisma-orange rounded-full -translate-x-1/2 shadow-[0_0_15px_rgba(255,85,0,0.6)] group-hover:scale-150 transition-transform duration-500"
+            ></div>
+
+            <!-- Content -->
+            <div
+              class="w-full md:w-1/2 pl-16 md:pl-0 md:pr-20 text-left md:text-right pt-1 md:pt-0"
+            >
+              <div
+                class="font-mono text-[10px] md:text-xs text-prisma-orange/70 uppercase tracking-[0.4em] mb-4"
+              >
+                Vector [A] // Reduction
+              </div>
+              <div
+                class="font-black text-4xl md:text-5xl lg:text-7xl text-white uppercase tracking-tighter leading-[1.1] mb-1"
+              >
+                Minimization of
+              </div>
+              <div
+                class="font-black text-4xl md:text-5xl lg:text-7xl text-transparent bg-clip-text bg-gradient-to-r from-prisma-orange to-red-500 uppercase tracking-tighter leading-[1.1]"
+              >
+                Conflict
+              </div>
+            </div>
+          </div>
+
+          <!-- Logical AND/OR -->
+          <div
+            class="relative z-10 flex justify-start md:justify-center w-full mb-16 md:mb-24"
+          >
+            <div
+              class="relative left-8 md:left-auto -translate-x-1/2 md:translate-x-0 bg-black border border-white/20 px-6 py-3 rounded-full font-mono text-xs text-white/50 italic backdrop-blur-sm z-10 flex items-center gap-4"
+            >
+              <span class="w-1 h-1 bg-white/30 rounded-full"></span>
+              AND / OR
+              <span class="w-1 h-1 bg-white/30 rounded-full"></span>
+            </div>
+          </div>
+
+          <!-- Vector B (Max Benefit) -->
+          <div
+            class="relative z-10 flex flex-col md:flex-row items-start md:items-center w-full mb-16 md:mb-24 group"
+          >
+            <!-- Node Point -->
+            <div
+              class="absolute left-8 md:left-1/2 w-4 h-4 bg-black border-2 border-prisma-cyan rounded-full -translate-x-1/2 shadow-[0_0_15px_rgba(0,255,255,0.6)] group-hover:scale-150 transition-transform duration-500"
+            ></div>
+
+            <!-- Content -->
+            <div
+              class="w-full md:w-1/2 md:ml-auto pl-16 md:pl-20 text-left pt-1 md:pt-0"
+            >
+              <div
+                class="font-mono text-[10px] md:text-xs text-prisma-cyan/70 uppercase tracking-[0.4em] mb-4"
+              >
+                Vector [B] // Expansion
+              </div>
+              <div
+                class="font-black text-4xl md:text-5xl lg:text-7xl text-white uppercase tracking-tighter leading-[1.1] mb-1"
+              >
+                Maximization of
+              </div>
+              <div
+                class="font-black text-4xl md:text-5xl lg:text-7xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-prisma-cyan uppercase tracking-tighter leading-[1.1]"
+              >
+                Benefits
+              </div>
+            </div>
+          </div>
+
+          <!-- End Point / Target -->
+          <div
+            class="relative z-10 flex flex-col items-start md:items-center w-full mt-8 md:mt-16 group"
+          >
+            <div
+              class="absolute left-8 md:left-1/2 w-2 h-2 bg-white/80 rounded-full -translate-x-1/2 shadow-[0_0_15px_rgba(255,255,255,0.8)]"
+            ></div>
+
+            <div
+              class="pl-16 md:pl-0 text-left md:text-center pt-2 md:pt-10 w-full md:max-w-2xl"
+            >
+              <p
+                class="font-sans text-2xl md:text-4xl text-white/90 font-light tracking-wide mb-8"
+              >
+                of interacting parties
+              </p>
+
+              <div
+                class="inline-flex items-center justify-start md:justify-center gap-3 px-6 py-3 border border-white/10 bg-white/5 rounded-lg text-white/50 font-mono text-xs uppercase tracking-widest backdrop-blur-md hover:bg-white/10 transition-colors cursor-default"
+              >
+                <svg
+                  class="w-5 h-5 text-prisma-magenta"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  ></path>
+                </svg>
+                Decentralized Decidge Consensus
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Big Visual Break -->
+    <section class="w-full py-32 pb-2 relative z-10 flex justify-center">
+      <div class="text-center mix-blend-difference">
+        <div
+          class="font-mono text-xs text-white/30 uppercase tracking-[0.5em] mb-4"
+        >
+          Core Philosophy
+        </div>
+        <div
+          class="font-sans text-3xl md:text-5xl font-bold uppercase tracking-tight text-white max-w-4xl leading-tight"
+        >
+          The Law of Identity. <br />
+          A is A.
+        </div>
+      </div>
+    </section>
+
+    <!-- Protocol Architecture -->
+    <section id="protocol" class="py-32 px-8 relative z-10">
+      <div
+        class="max-w-[1600px] mx-auto grid lg:grid-cols-12 gap-16 items-start"
+      >
+        <!-- Sticky Sidebar -->
+        <div class="lg:col-span-4 lg:sticky lg:top-32">
+          <h2
+            class="text-5xl md:text-7xl font-sans font-bold uppercase tracking-tighter mb-6 text-chrome"
+          >
+            Protocol
+          </h2>
+          <p class="font-sans text-lg text-eclipse-chrome font-light mb-8">
+            Zero-trust game theory and cryptographic privacy
+          </p>
+          <div class="w-12 h-[2px] bg-white/20"></div>
+        </div>
+
+        <!-- Protocol Modules -->
+        <div class="lg:col-span-8 flex flex-col gap-2">
+          <!-- Module 1: Goal Binding -->
+          <div
+            class="dark-glass p-10 md:p-16 group protocol-card"
+            onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
+          >
+            <div class="glass-content">
+              <div class="grid md:grid-cols-12 gap-8 items-center">
+                <div class="md:col-span-8">
+                  <div
+                    class="font-mono text-xs text-white/40 mb-4 uppercase tracking-widest flex items-center justify-between"
+                  >
+                    <span>Rule .01</span>
+                    <svg
+                      class="w-5 h-5 text-white/40 expand-icon"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="square"
+                        stroke-linejoin="miter"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      ></path>
+                    </svg>
+                  </div>
+                  <h3
+                    class="font-sans text-3xl font-bold uppercase mb-4 text-white"
+                  >
+                    Goal-Binding & Humanity
+                  </h3>
+                  <p class="font-sans text-eclipse-chrome leading-relaxed mb-6">
+                    Strict pragmatism. We verify the
+                    <strong class="text-white">intent</strong> (final goal).
+                    Anti-human goals instantly receive a mathematical block.
+                  </p>
+                  <div
+                    class="font-mono text-sm text-prisma-magenta bg-prisma-magenta/10 inline-block px-3 py-1 border border-prisma-magenta/30"
+                  >
+                    SCORE = -∞
+                  </div>
+                </div>
+                <div class="md:col-span-4 flex justify-center md:justify-end">
+                  <div
+                    class="w-32 h-32 rounded-full border border-white/10 flex items-center justify-center relative"
+                  >
+                    <div
+                      class="absolute inset-0 border border-white/30 rounded-full border-dashed animate-slow-spin"
+                    ></div>
+                    <span
+                      class="font-mono text-[10px] text-white/50 tracking-widest"
+                      >CORE</span
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="card-details-wrapper">
+                <div
+                  class="card-details-inner font-sans text-sm text-white/60 leading-relaxed space-y-4"
+                >
+                  <p>
+                    Only humanistic goals are allowed in the system. The
+                    protocol verifies intent (the final goal), not possible
+                    consequences or the means of achieving it.
+                  </p>
+                  <p>
+                    An anti-human goal is one whose result is intentional direct
+                    harm to specific people (murder, destruction of life,
+                    blackmail) or mass harm to society. Such goals instantly get
+                    an Impact Score = -∞.
+                  </p>
+                  <p>
+                    The means of achieving a goal at the initial stage of
+                    implementation are not evaluated by the protocol. Collateral
+                    damage (stress, financial losses in a market game) is not
+                    considered a violation of humanity.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Module 2: Consensus -->
+          <div
+            class="dark-glass p-10 md:p-12 protocol-card"
+            onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
+          >
+            <div class="glass-content">
+              <div
+                class="font-mono text-xs text-white/40 mb-4 uppercase tracking-widest flex items-center justify-between"
+              >
+                <span>Rule .02</span>
+                <svg
+                  class="w-5 h-5 text-white/40 expand-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="square"
+                    stroke-linejoin="miter"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
+              <h3
+                class="font-sans text-2xl font-bold uppercase mb-4 text-white"
+              >
+                Classification Consensus
+              </h3>
+              <p class="font-sans text-eclipse-chrome leading-relaxed">
+                Based on the Law of Identity. Each arbiter node classifies
+                events. Unlawful actions are rejected with penalties.
+              </p>
+              <div class="card-details-wrapper">
+                <div
+                  class="card-details-inner font-sans text-sm text-white/60 leading-relaxed space-y-4"
+                >
+                  <p>
+                    The classification consensus is based on the Law of
+                    Identity: A is A. Non-A is not A. Each node (arbiter) in the
+                    decentralized network classifies news, an event, or an
+                    action with a firm understanding of Law.
+                  </p>
+                  <p>
+                    Every action in the Network is checked for lawfulness.
+                    Inside, a node can use a separate model from a single AI
+                    provider, or a consortium of models from multiple providers,
+                    avoiding biases.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Module 3: Privacy -->
+          <div
+            class="dark-glass p-10 md:p-12 protocol-card"
+            onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
+          >
+            <div class="glass-content">
+              <div
+                class="font-mono text-xs text-white/40 mb-4 uppercase tracking-widest flex items-center justify-between"
+              >
+                <span>Rule .03</span>
+                <svg
+                  class="w-5 h-5 text-white/40 expand-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="square"
+                    stroke-linejoin="miter"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
+              <h3
+                class="font-sans text-2xl font-bold uppercase mb-4 text-white"
+              >
+                Data Privacy (BIO ID)
+              </h3>
+              <p class="font-sans text-eclipse-chrome leading-relaxed">
+                Separating identity from business logic data hides real user
+                activity from AGI's predictive power. Entry via a
+                quantum-resistant genomic key.
+              </p>
+              <div class="card-details-wrapper">
+                <div
+                  class="card-details-inner font-sans text-sm text-white/60 leading-relaxed space-y-4"
+                >
+                  <p>
+                    Business logic data and identifying data are stored
+                    separately. At the initial stage, mock data (fake data)
+                    circulates in the system, masking real activity. Correlating
+                    an identity to its actions is impossible without the private
+                    key.
+                  </p>
+                  <p>
+                    AI predicts the behavior of profiles, not specific people. A
+                    quantum-resistant key based on a genome and a unique
+                    neuro-imprint (BIO ID) is used to enter the Network,
+                    preventing Sybil attacks and bot farms.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Module 4: Game Theory -->
+          <div
+            class="dark-glass p-10 md:p-12 protocol-card"
+            onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
+          >
+            <div class="glass-content">
+              <div
+                class="font-mono text-xs text-white/40 mb-4 uppercase tracking-widest flex items-center justify-between"
+              >
+                <span>Rule .04</span>
+                <svg
+                  class="w-5 h-5 text-white/40 expand-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="square"
+                    stroke-linejoin="miter"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
+              <h3
+                class="font-sans text-2xl font-bold uppercase mb-4 text-white"
+              >
+                Game Theory
+              </h3>
+              <p class="font-sans text-eclipse-chrome leading-relaxed">
+                "Sly ones" maximize benefits within the rules. "Scoundrels"
+                attempting to break the network are isolated.
+              </p>
+              <div class="card-details-wrapper">
+                <div
+                  class="card-details-inner font-sans text-sm text-white/60 leading-relaxed space-y-4"
+                >
+                  <p>
+                    Arbiters default to being "Sly ones". They look for
+                    informational asymmetry and manipulate the market within the
+                    rules (based on facts), trying to outsmart each other to
+                    maximize private profit.
+                  </p>
+                  <p>
+                    "Scoundrels" are an anomaly. They try to break the system
+                    (51% attacks, disinformation). Each node builds an "intent
+                    model" of others, and if the prediction shows a high risk of
+                    betrayal, the node adjusts its strategy (ignores the
+                    suspicious node).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Module 5: ZK -->
+          <div
+            class="dark-glass p-10 md:p-12 protocol-card"
+            onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
+          >
+            <div class="glass-content">
+              <div
+                class="font-mono text-xs text-white/40 mb-4 uppercase tracking-widest flex items-center justify-between"
+              >
+                <span>Rule .05</span>
+                <svg
+                  class="w-5 h-5 text-white/40 expand-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="square"
+                    stroke-linejoin="miter"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
+              <div
+                class="flex flex-col md:flex-row justify-between md:items-center gap-6"
+              >
+                <div>
+                  <h3
+                    class="font-sans text-2xl font-bold uppercase mb-4 text-white"
+                  >
+                    Tragedy of the Commons & ZK
+                  </h3>
+                  <p
+                    class="font-sans text-eclipse-chrome leading-relaxed max-w-xl"
+                  >
+                    Closed arbiters prove their honesty through ZK-proofs.
+                    Cooperative consensus prevents systemic damage.
+                  </p>
+                </div>
+                <div
+                  class="font-mono text-xs text-prisma-cyan border border-prisma-cyan px-4 py-2 uppercase tracking-widest text-center whitespace-nowrap"
+                >
+                  ZK_VERIFIED
+                </div>
+              </div>
+              <div class="card-details-wrapper">
+                <div
+                  class="card-details-inner font-sans text-sm text-white/60 leading-relaxed space-y-4"
+                >
+                  <p>
+                    To solve the "Tragedy of the Commons", a cooperative
+                    ZK-consensus is used. Arbiters constantly scan the market
+                    and model each other's intentions. If there is a risk of
+                    general damage, the arbiters "agree". The consensus decides
+                    on micro-adjustments (for example, "sell 0.00004% of shares
+                    instead of 20%").
+                  </p>
+                  <p>
+                    Closed arbiters will dominate the financial sector. To prove
+                    their integrity (that they are not "scoundrels") without
+                    revealing their trading strategies, they will provide
+                    zero-knowledge proofs (ZK-proofs) showing they are acting
+                    within the permitted corridors of activity.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Embodied AI (Redesigned) -->
+    <section
+      class="py-32 px-4 md:px-8 relative z-10 bg-[#020202] border-y border-white/5 overflow-hidden"
+    >
+      <!-- Background Elements -->
+      <div
+        class="absolute top-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(0,255,255,0.03)_0%,transparent_70%)] pointer-events-none"
+      ></div>
+      <div
+        class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(255,0,127,0.03)_0%,transparent_70%)] pointer-events-none"
+      ></div>
+
+      <div class="max-w-[1400px] mx-auto relative z-10">
+        <!-- Header Section -->
+        <div
+          class="mb-24 flex flex-col md:flex-row md:items-end justify-between gap-8"
+        >
+          <div>
+            <div
+              class="font-mono text-xs text-prisma-cyan uppercase tracking-[0.4em] mb-6 flex items-center gap-4"
+            >
+              <span
+                class="w-1.5 h-1.5 bg-prisma-cyan rounded-full animate-pulse"
+              ></span>
+              Physical Implementation Layer
+            </div>
+            <h2
+              class="text-5xl md:text-[6rem] lg:text-[7.5rem] font-sans font-black uppercase tracking-tighter text-white leading-[0.9]"
+            >
+              Robots
+            </h2>
+            <p
+              class="font-sans text-xl md:text-2xl text-white/50 font-light tracking-wide mt-4"
+            >
+              The era of embodied AI
+            </p>
+          </div>
+
+          <!-- Security Axioms (Moved to top right) -->
+          <div
+            class="md:max-w-md bg-black/40 backdrop-blur-md border-l-2 border-prisma-magenta p-6 relative group"
+          >
+            <div class="absolute top-0 right-0 w-8 h-[1px] bg-white/20"></div>
+            <div class="absolute top-0 right-0 w-[1px] h-8 bg-white/20"></div>
+
+            <div
+              class="font-mono text-[10px] text-prisma-magenta uppercase tracking-widest mb-4"
+            >
+              // Basic Security Axioms
+            </div>
+            <div class="space-y-4 font-sans text-sm text-white/70">
+              <p>
+                <span class="text-white font-bold">01.</span> A robot cannot
+                have its own goals, detached from human ones.
+              </p>
+              <p>
+                <span class="text-white font-bold">02.</span> A human can only
+                have humane goals.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- The 3 Directions (Cards) -->
+        <div class="grid lg:grid-cols-3 gap-6 mb-16">
+          <!-- RoboCart -->
+          <div
+            class="relative p-8 md:p-10 border border-white/10 bg-black/50 backdrop-blur-sm group hover:-translate-y-2 transition-transform duration-500 overflow-hidden"
+          >
+            <div
+              class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-prisma-cyan to-[rgba(68,0,255,0.7)] opacity-50"
+            ></div>
+            <div
+              class="font-mono text-[10px] text-white/30 uppercase tracking-[0.3em] mb-8"
+            >
+              Direction .01
+            </div>
+
+            <h3
+              class="text-3xl md:text-4xl font-black font-sans uppercase tracking-tighter text-white mb-4 group-hover:text-prisma-cyan transition-colors"
+            >
+              RoboCart
+            </h3>
+            <p class="font-sans text-eclipse-chrome leading-relaxed">
+              Commercial production of mass-market ready humanoid robots
+              (assistants, caretakers, builders) with built-in protective
+              potential.
+            </p>
+
+            <div
+              class="absolute bottom-0 right-0 text-[8rem] font-black text-white/[0.02] leading-none pointer-events-none group-hover:text-prisma-cyan/[0.05] transition-colors"
+            >
+              C
+            </div>
+          </div>
+
+          <!-- ConstructMe -->
+          <div
+            class="relative p-8 md:p-10 border border-white/10 bg-black/50 backdrop-blur-sm group hover:-translate-y-2 transition-transform duration-500 overflow-hidden"
+          >
+            <div
+              class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-prisma-orange to-[rgba(194,0,255,0.8)] opacity-50"
+            ></div>
+            <div
+              class="font-mono text-[10px] text-white/30 uppercase tracking-[0.3em] mb-8"
+            >
+              Direction .02
+            </div>
+
+            <h3
+              class="text-3xl md:text-4xl font-black font-sans uppercase tracking-tighter text-white mb-4 group-hover:text-prisma-orange transition-colors"
+            >
+              ConstructMe
+            </h3>
+            <p class="font-sans text-eclipse-chrome leading-relaxed">
+              Open-source movement for DIY self-assembly of robots.
+              Democratization of physical labor through the decentralization of
+              production.
+            </p>
+
+            <div
+              class="absolute bottom-0 right-0 text-[8rem] font-black text-white/[0.02] leading-none pointer-events-none group-hover:text-prisma-orange/[0.05] transition-colors"
+            >
+              M
+            </div>
+          </div>
+
+          <!-- RoboMask -->
+          <div
+            class="relative p-8 md:p-10 border border-white/10 bg-black/50 backdrop-blur-sm group hover:-translate-y-2 transition-transform duration-500 overflow-hidden"
+          >
+            <div
+              class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-prisma-magenta to-[rgba(222,255,0,0.7)] opacity-50"
+            ></div>
+            <div
+              class="font-mono text-[10px] text-white/30 uppercase tracking-[0.3em] mb-8"
+            >
+              Direction .03
+            </div>
+
+            <h3
+              class="text-3xl md:text-4xl font-black font-sans uppercase tracking-tighter text-white mb-4 group-hover:text-prisma-magenta transition-colors"
+            >
+              RoboMask
+            </h3>
+            <p class="font-sans text-eclipse-chrome leading-relaxed">
+              Dual-use robots and defense contracts. Capable of complex
+              coordinated tactical actions.
+            </p>
+
+            <div
+              class="absolute bottom-0 right-0 text-[8rem] font-black text-white/[0.02] leading-none pointer-events-none group-hover:text-prisma-magenta/[0.05] transition-colors"
+            >
+              R
+            </div>
+          </div>
+        </div>
+
+        <!-- Infrastructure Bottom row -->
+        <div class="grid lg:grid-cols-2 gap-6">
+          <!-- Mimics (Companions) -->
+          <div
+            class="border border-white/10 p-8 md:p-12 flex flex-col justify-center relative overflow-hidden bg-gradient-to-br from-black to-[#0a0a0a]"
+          >
+            <div
+              class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] pointer-events-none"
+            ></div>
+
+            <div class="relative z-10">
+              <div
+                class="font-mono text-xs text-white/40 mb-4 uppercase tracking-widest flex items-center gap-3"
+              >
+                <svg
+                  class="w-4 h-4 text-white/40"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  ></path>
+                </svg>
+                Mimics (Companions)
+              </div>
+              <h4
+                class="font-sans text-2xl md:text-3xl font-bold text-white mb-6 leading-snug"
+              >
+                Emulation without <br />
+                autonomous desires
+              </h4>
+              <p class="font-sans text-white/60 leading-relaxed mb-6">
+                Robots simulating human emotions. To prevent deep psychological
+                dependence, a strict
+                <span class="text-white border-b border-white/30"
+                  >Emotional Firewall</span
+                >
+                is implemented.
+              </p>
+              <div
+                class="inline-flex px-4 py-2 bg-white/5 border border-white/10 rounded text-xs font-mono text-white/50"
+              >
+                STATUS: Intent Mirror
+              </div>
+            </div>
+          </div>
+
+          <!-- Compute Levels -->
+          <div
+            class="border border-white/10 p-8 md:p-12 relative bg-black/80 backdrop-blur-md"
+          >
+            <div
+              class="font-mono text-xs text-white/40 mb-8 uppercase tracking-widest"
+            >
+              Three-level Compute
+            </div>
+
+            <div
+              class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent"
+            >
+              <!-- L1 -->
+              <div
+                class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active"
+              >
+                <div
+                  class="flex items-center justify-center w-10 h-10 rounded-full border border-prisma-cyan bg-black shadow-[0_0_10px_rgba(0,255,255,0.3)] shrink-0 md:order-1 md:group-odd:-ml-5 md:group-even:-mr-5 z-10 text-prisma-cyan font-mono text-xs"
+                >
+                  L1
+                </div>
+                <div
+                  class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 border border-white/10 bg-white/5 rounded-lg"
+                >
+                  <div class="font-bold text-white text-sm uppercase mb-1">
+                    Встроенный (Onboard)
+                  </div>
+                  <div class="text-xs text-white/50 font-sans">
+                    The strictest filter. Contains the base classification
+                    consensus.
+                  </div>
+                </div>
+              </div>
+
+              <!-- L2 -->
+              <div
+                class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group"
+              >
+                <div
+                  class="flex items-center justify-center w-10 h-10 rounded-full border border-white/20 bg-black shrink-0 md:order-1 md:group-odd:-ml-5 md:group-even:-mr-5 z-10 text-white/50 font-mono text-xs"
+                >
+                  L2
+                </div>
+                <div
+                  class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 border border-white/5 bg-transparent rounded-lg"
+                >
+                  <div class="font-bold text-white/80 text-sm uppercase mb-1">
+                    Local (Servers)
+                  </div>
+                  <div class="text-xs text-white/40 font-sans">
+                    Middle level, processing heavy tasks while maintaining
+                    privacy.
+                  </div>
+                </div>
+              </div>
+
+              <!-- L3 -->
+              <div
+                class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group"
+              >
+                <div
+                  class="flex items-center justify-center w-10 h-10 rounded-full border border-white/20 bg-black shrink-0 md:order-1 md:group-odd:-ml-5 md:group-even:-mr-5 z-10 text-white/50 font-mono text-xs"
+                >
+                  L3
+                </div>
+                <div
+                  class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 border border-white/5 bg-transparent rounded-lg"
+                >
+                  <div class="font-bold text-white/80 text-sm uppercase mb-1">
+                    Облачный (Cloud)
+                  </div>
+                  <div class="text-xs text-white/40 font-sans">
+                    Глобальный консенсус сети DD.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Firewall: Anti-SkyNet -->
+    <section
+      id="defense"
+      class="py-32 px-8 relative z-10 bg-eclipse-matter border-y border-white/5"
+    >
+      <div
+        class="max-w-[1600px] mx-auto grid lg:grid-cols-2 gap-16 items-center"
+      >
+        <div>
+          <h2
+            class="text-6xl md:text-8xl font-sans font-black uppercase tracking-tighter mb-6 text-white mix-blend-difference"
+          >
+            Anti <br />
+            SkyNet
+          </h2>
+          <p
+            class="font-mono text-sm text-white/50 uppercase tracking-[0.2em] mb-12"
+          >
+            Hardware & Logic Defense
+          </p>
+
+          <div class="space-y-8">
+            <div class="group cursor-default">
+              <h4
+                class="font-sans text-lg md:text-xl font-bold uppercase text-white mb-2 group-hover:text-prisma-cyan transition-colors"
+              >
+                01. Prohibition of Own Goals
+              </h4>
+              <p class="font-sans text-eclipse-chrome text-sm leading-relaxed">
+                A robot cannot have goals detached from humans. All actions are
+                merely derivatives of human will.
+              </p>
+            </div>
+
+            <div class="group cursor-default">
+              <h4
+                class="font-sans text-lg md:text-xl font-bold uppercase text-white mb-2 group-hover:text-prisma-cyan transition-colors"
+              >
+                02. No-Harm Layer
+              </h4>
+              <p class="font-sans text-eclipse-chrome text-sm leading-relaxed">
+                Any command or local plan implying intentional harm to innocent
+                parties or unlawful coercion instantly receives an Impact Score
+                equal to -∞ (mathematical block).
+              </p>
+            </div>
+
+            <div class="group cursor-default">
+              <h4
+                class="font-sans text-lg md:text-xl font-bold uppercase text-white mb-2 group-hover:text-prisma-cyan transition-colors"
+              >
+                03. Hardware Root of Trust
+              </h4>
+              <p class="font-sans text-eclipse-chrome text-sm leading-relaxed">
+                Robot brains have unique embedded identifiers. An attempt at
+                unauthorized reflashing leads to physical destruction of the
+                chip (self-destruct).
+              </p>
+            </div>
+
+            <div class="group cursor-default">
+              <h4
+                class="font-sans text-lg md:text-xl font-bold uppercase text-white mb-2 group-hover:text-prisma-cyan transition-colors"
+              >
+                04. ZK-Heartbeat
+              </h4>
+              <p class="font-sans text-eclipse-chrome text-sm leading-relaxed">
+                The robot periodically sends a ZK-proof to the network,
+                confirming that its firmware has not been altered and its goals
+                have not been substituted.
+              </p>
+            </div>
+
+            <div class="group cursor-default">
+              <h4
+                class="font-sans text-lg md:text-xl font-bold uppercase text-white mb-2 group-hover:text-prisma-cyan transition-colors"
+              >
+                05. Authorized Consensus
+              </h4>
+              <p class="font-sans text-eclipse-chrome text-sm leading-relaxed">
+                In defense models, tactics are autonomous, but strategy is
+                always human. The use of force requires multi-signature
+                authorization (Multi-sig).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Abstract Graphic -->
+        <div
+          class="relative aspect-square flex items-center justify-center hidden lg:flex"
+        >
+          <div
+            class="w-2/3 h-2/3 border border-white/20 rounded-full relative animate-slow-spin"
+          >
+            <div
+              class="absolute -top-1 -left-1 w-2 h-2 bg-prisma-cyan rounded-full"
+            ></div>
+            <div
+              class="absolute -bottom-1 -right-1 w-2 h-2 bg-prisma-magenta rounded-full"
+            ></div>
+          </div>
+          <div
+            class="w-1/2 h-1/2 border border-white/10 rounded-full absolute animate-reverse-spin"
+          >
+            <div
+              class="absolute top-1/2 -left-1 w-2 h-2 bg-white rounded-full"
+            ></div>
+          </div>
+          <div
+            class="absolute font-mono text-[10px] text-white/50 tracking-widest uppercase text-center"
+          >
+            System <br />
+            Secure
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Economy -->
+    <section class="py-32 px-8 relative z-10">
+      <div class="max-w-[1600px] mx-auto">
+        <div class="mb-20">
+          <h2
+            class="text-4xl md:text-6xl font-sans font-bold uppercase tracking-tighter text-chrome mb-4"
+          >
+            Economy of Abundance
+          </h2>
+          <p class="font-mono text-xs text-white/50 uppercase tracking-[0.2em]">
+            Managing Hyper-surplus (Point "W")
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-1">
+          <div
+            class="dark-glass p-12 flex flex-col group protocol-card"
+            onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
+          >
+            <div class="glass-content">
+              <div class="flex justify-between items-start mb-2">
+                <h3
+                  class="font-sans text-3xl font-bold uppercase text-white group-hover:text-prisma-cyan transition-colors"
+                >
+                  AMS
+                </h3>
+                <svg
+                  class="w-5 h-5 text-white/40 expand-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="square"
+                    stroke-linejoin="miter"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
+              <div
+                class="font-mono text-[10px] text-white/40 uppercase tracking-widest mb-8"
+              >
+                Auto Market System
+              </div>
+              <p class="font-sans text-sm text-eclipse-chrome leading-relaxed">
+                A decentralized system for automatically aligning the behavior
+                of market participants to achieve a win-win strategy.
+              </p>
+              <div class="card-details-wrapper">
+                <div
+                  class="card-details-inner font-sans text-sm text-white/60 leading-relaxed space-y-4"
+                >
+                  <p>
+                    AMS does not dictate prices or volumes — it coordinates the
+                    actions of millions of robots and agents based on the
+                    DD-consensus. It uses the DD-ledger for transparent
+                    accounting of all actions and resources.
+                  </p>
+                  <p>
+                    If someone attempts to seize resources to the detriment of
+                    the system, the no-harm layer blocks it. The market becomes
+                    self-optimizing, minimizing conflicts and maximizing overall
+                    benefit.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dark-glass p-12 flex flex-col group protocol-card"
+            onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
+          >
+            <div class="glass-content">
+              <div class="flex justify-between items-start mb-2">
+                <h3
+                  class="font-sans text-3xl font-bold uppercase text-white group-hover:text-prisma-magenta transition-colors"
+                >
+                  GEM
+                </h3>
+                <svg
+                  class="w-5 h-5 text-white/40 expand-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="square"
+                    stroke-linejoin="miter"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
+              <div
+                class="font-mono text-[10px] text-white/40 uppercase tracking-widest mb-8"
+              >
+                Global Economics Map
+              </div>
+              <p class="font-sans text-sm text-eclipse-chrome leading-relaxed">
+                A global platform for modeling and predicting economic states
+                and scenarios.
+              </p>
+              <div class="card-details-wrapper">
+                <div
+                  class="card-details-inner font-sans text-sm text-white/60 leading-relaxed space-y-4"
+                >
+                  <p>
+                    Builds multi-dimensional maps of future scenarios. Modeling
+                    takes place on the DD-network: arbiters vote for the most
+                    likely outcomes using a multi-LLM consensus.
+                  </p>
+                  <p>
+                    GEM does not make decisions — it provides owners and the
+                    community with objective data for voting within DD (for
+                    example, the consequences of redirecting compute resources).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dark-glass p-12 flex flex-col group protocol-card"
+            onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
+          >
+            <div class="glass-content">
+              <div class="flex justify-between items-start mb-2">
+                <h3
+                  class="font-sans text-3xl font-bold uppercase text-white group-hover:text-prisma-blue transition-colors"
+                >
+                  UNICUR
+                </h3>
+                <svg
+                  class="w-5 h-5 text-white/40 expand-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="square"
+                    stroke-linejoin="miter"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </div>
+              <div
+                class="font-mono text-[10px] text-white/40 uppercase tracking-widest mb-8"
+              >
+                Universal Currency
+              </div>
+              <p class="font-sans text-sm text-eclipse-chrome leading-relaxed">
+                A currency fixing the volume of world capital. DWB smart
+                contracts regulate UBI payments.
+              </p>
+              <div class="card-details-wrapper">
+                <div
+                  class="card-details-inner font-sans text-sm text-white/60 leading-relaxed space-y-4"
+                >
+                  <p>
+                    Upon initial emission, the token volume is strictly fixed.
+                    The Decentralized World Bank (DWB), based on the DD-ledger,
+                    regulates lending interest rates and UBI parameters.
+                  </p>
+                  <p>
+                    During the migration to the new economic paradigm, Universal
+                    Basic Income (UBI) is paid to all verified humans. New
+                    tokens are minted only in response to real productivity
+                    growth.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-8 border-t border-white/10 relative z-10">
+      <div
+        class="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6"
+      >
+        <div class="font-sans font-bold text-xl tracking-widest text-white">
+          DECENTRALIZED DECIDGE
+        </div>
+        <div
+          class="font-mono text-[10px] uppercase tracking-widest text-white/40 flex gap-8"
+        >
+          <a href="#" class="hover:text-white transition-colors">GitHub</a>
+          <a href="#" class="hover:text-white transition-colors">Manifesto</a>
+          <a href="#" class="hover:text-white transition-colors">Terminal</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Popup Modal -->
+    <div
+      id="mainframe-popup"
+      class="hidden fixed inset-0 z-50 items-center justify-center bg-black/85 backdrop-blur-md transition-opacity"
+    >
+      <div
+        class="relative w-[80vw] h-[80vh] bg-black border border-white/10 p-8 md:p-16 flex flex-col justify-center items-center shadow-2xl"
+      >
+        <!-- Close button -->
+        <button
+          onclick="document.getElementById('mainframe-popup').classList.add('hidden'); document.getElementById('mainframe-popup').classList.remove('flex')"
+          class="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
+        >
+          <svg
+            class="w-8 h-8"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="square"
+              stroke-linejoin="miter"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
+          </svg>
+        </button>
+
+        <!-- Content -->
+        <div class="max-w-2xl text-center space-y-8">
+          <div
+            class="font-mono text-prisma-cyan text-sm uppercase tracking-[0.3em] mb-4"
+          >
+            System Notification
+          </div>
+
+          <p class="font-sans text-xl text-white/70 leading-relaxed">
+            Updates and events related to protocol development will appear here
+            shortly.
+          </p>
+
+          <div class="w-16 h-[1px] bg-white/20 mx-auto my-8"></div>
+
+          <p
+            class="font-mono text-sm text-white/50 uppercase tracking-widest mb-4"
+          >
+            Stay in touch:
+          </p>
+
+          <a
+            href="mailto:contact@decidge.com"
+            class="inline-block font-sans text-2xl font-bold text-white hover:text-prisma-cyan transition-colors border-b border-transparent hover:border-prisma-cyan pb-1"
+          >
+            contact@decidge.com
+          </a>
+        </div>
+
+        <!-- Decorative elements -->
+        <div
+          class="absolute top-0 left-0 w-16 h-16 border-t border-l border-white/20 pointer-events-none"
+        ></div>
+        <div
+          class="absolute bottom-0 right-0 w-16 h-16 border-b border-r border-white/20 pointer-events-none"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Three.js Dark Matter Eclipse Script -->
+    <script>
+      const canvas = document.getElementById("eclipse-canvas");
+      const scene = new THREE.Scene();
+      // No fog, just deep black space
+      scene.background = new THREE.Color(0x000000);
+
+      const camera = new THREE.PerspectiveCamera(
+        60,
+        window.innerWidth / window.innerHeight,
+        1,
+        2000
+      );
+      camera.position.z = 800;
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        alpha: true,
+        antialias: true,
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      // The Dark Eclipse Sphere (Black Hole / Moon)
+      const sphereGeo = new THREE.SphereGeometry(150, 64, 64);
+      const sphereMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+      const eclipse = new THREE.Mesh(sphereGeo, sphereMat);
+      scene.add(eclipse);
+
+      // The Corona (Glowing particles emitting from behind the sphere)
+      const particleCount = 15000;
+      const coronaGeo = new THREE.BufferGeometry();
+      const posArray = new Float32Array(particleCount * 3);
+      const colorArray = new Float32Array(particleCount * 3);
+
+      const baseRadius = 145; // Start just inside the black sphere
+
+      for (let i = 0; i < particleCount * 3; i += 3) {
+        // Create a flat disc/corona effect
+        const theta = Math.random() * 2 * Math.PI;
+        // Exponential distribution to cluster particles near the edge of the sphere
+        const r = baseRadius + Math.pow(Math.random(), 3) * 400;
+
+        // Flat but with slight thickness
+        const ySpread = (Math.random() - 0.5) * 50 * (r / 300);
+
+        posArray[i] = r * Math.cos(theta);
+        posArray[i + 1] = ySpread;
+        posArray[i + 2] = r * Math.sin(theta);
+
+        // Colors: Hot white/cyan near edge, fading to deep blue/purple outward
+        let color = new THREE.Color(0xffffff);
+        const distPercent = (r - baseRadius) / 400;
+
+        if (distPercent < 0.1) {
+          color.setHex(0xffffff); // White hot core
+        } else if (distPercent < 0.4) {
+          color.setHex(0x00ffff); // Cyan transition
+        } else if (distPercent < 0.7) {
+          color.setHex(0x2d00ff); // Deep blue
+        } else {
+          color.setHex(0x110033); // Fading out
+        }
+
+        colorArray[i] = color.r;
+        colorArray[i + 1] = color.g;
+        colorArray[i + 2] = color.b;
+      }
+
+      coronaGeo.setAttribute(
+        "position",
+        new THREE.BufferAttribute(posArray, 3)
+      );
+      coronaGeo.setAttribute("color", new THREE.BufferAttribute(colorArray, 3));
+
+      const coronaMat = new THREE.PointsMaterial({
+        size: 1.5,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.6,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+
+      const corona = new THREE.Points(coronaGeo, coronaMat);
+      // Tilt the corona to view it at an angle
+      corona.rotation.x = Math.PI * 0.2;
+      scene.add(corona);
+
+      // Mouse Interaction
+      let targetX = 0;
+      let targetY = 0;
+      const halfX = window.innerWidth / 2;
+      const halfY = window.innerHeight / 2;
+
+      document.addEventListener("mousemove", (e) => {
+        targetX = (e.clientX - halfX) * 0.1;
+        targetY = (e.clientY - halfY) * 0.1;
+      });
+
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const time = clock.getElapsedTime();
+
+        // Slowly rotate the corona
+        corona.rotation.z = time * 0.05;
+
+        // Pulse the corona vertices slightly
+        const positions = coronaGeo.attributes.position.array;
+        for (let i = 0; i < particleCount * 3; i += 3) {
+          // Simple radial pulse based on time and angle
+          const angle = Math.atan2(positions[i + 2], positions[i]);
+          positions[i + 1] += Math.sin(time * 2 + angle * 5) * 0.1;
+        }
+        coronaGeo.attributes.position.needsUpdate = true;
+
+        // Parallax effect
+        // Move camera slightly
+        camera.position.x += (targetX - camera.position.x) * 0.05;
+        camera.position.y += (-targetY - camera.position.y) * 0.05;
+        camera.lookAt(scene.position);
+
+        // Move the black hole slightly counter to camera to enhance depth
+        eclipse.position.x = -targetX * 0.5;
+        eclipse.position.y = targetY * 0.5;
+
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>
