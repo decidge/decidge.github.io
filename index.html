@@ -2235,10 +2235,16 @@
       }
       animate();
 
+      let currentWidth = window.innerWidth;
       window.addEventListener("resize", () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        // На мобильных устройствах скролл скрывает адресную строку, меняя высоту окна и вызывая resize.
+        // Чтобы избежать дерганья сцены, обновляем канвас только если изменилась ширина (поворот экрана или ресайз на ПК).
+        if (window.innerWidth !== currentWidth || !("ontouchstart" in window)) {
+          currentWidth = window.innerWidth;
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        }
       });
     </script>
   </body>
