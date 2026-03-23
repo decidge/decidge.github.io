@@ -1972,7 +1972,7 @@
           </p>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-1">
+        <div id="economy-cards" class="grid md:grid-cols-3 gap-1">
           <div
             class="dark-glass p-12 flex flex-col group protocol-card"
             onclick="this.classList.toggle('open'); this.querySelector('.card-details-wrapper').classList.toggle('open')"
@@ -2135,6 +2135,20 @@
             </div>
           </div>
         </div>
+
+        <script>
+          // Automatically open Economy of Abundance cards on desktop (>=768px)
+          if (window.innerWidth >= 768) {
+            const economyCards = document.querySelectorAll(
+              "#economy-cards .protocol-card"
+            );
+            economyCards.forEach((card) => {
+              card.classList.add("open");
+              const wrapper = card.querySelector(".card-details-wrapper");
+              if (wrapper) wrapper.classList.add("open");
+            });
+          }
+        </script>
       </div>
     </section>
 
